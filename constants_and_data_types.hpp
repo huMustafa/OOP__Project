@@ -98,14 +98,6 @@ struct tile{
 struct position{
     int x;
     int y;
-
-    bool operator==(const position& other) const {
-        return (x == other.x) && (y == other.y);
-    }
-
-    bool operator!=(const position& other) const {
-        return !(*this == other);
-    }
 };
 
 Turn this_turn;

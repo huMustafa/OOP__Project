@@ -25,21 +25,6 @@ class Cursor : public Drawable{
         ship_type current_ship_in_use(void);
         tile_state try_bomb_enemy(void);
         void assign_ship_position(void);
-        bool operator==(const Cursor& other) const {
-        return (c_position == other.c_position) &&
-               (width == other.width) &&
-               (height == other.height) &&
-               (current_ship == other.current_ship) &&
-               (current_ship_orientation == other.current_ship_orientation) &&
-               (mode == other.mode) &&
-               (current_grid == other.current_grid) &&
-               (c_texture == other.c_texture) &&
-               (screen_position == other.screen_position);
-    }
-
-    bool operator!=(const Cursor& other) const {
-        return !(*this == other);
-    }
     private:
         position c_position;
         int width;
