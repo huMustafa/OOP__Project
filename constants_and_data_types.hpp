@@ -28,6 +28,15 @@ enum ship_type{
     TOTAL_SHIPS
 };
 
+bool operator==(ship_type lhs, ship_type rhs) {
+    return static_cast<int>(lhs) == static_cast<int>(rhs);
+}
+
+bool operator!=(ship_type lhs, ship_type rhs) {
+    return static_cast<int>(lhs) != static_cast<int>(rhs);
+}
+
+
 enum ship_orientation{
     UP,
     DOWN,
