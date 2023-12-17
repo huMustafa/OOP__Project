@@ -3,61 +3,78 @@
 #include <stdio.h>
 #include <iostream>
 
-Game::Game(void){
+// Constructor for the Game class
+Game::Game(void) {
+    // Initialize SDL, SDL_image, and SDL_ttf
     int imgFlags = IMG_INIT_PNG;
-    if ( (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) || (!(IMG_Init(imgFlags) & imgFlags)) || (TTF_Init() == -1)){
+    if ((SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) || (!(IMG_Init(imgFlags) & imgFlags)) || (TTF_Init() == -1)) {
         std::cout << "Could not initialize SDL! Error: " << SDL_GetError() << std::endl;
     }
-    else{
-        g_window = SDL_CreateWindow( "Battleship", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
-        if (g_window == NULL){
+    else {
+        // Create a window and renderer
+        g_window = SDL_CreateWindow("Battleship", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+        if (g_window == NULL) {
             std::cout << "Couldn't create the window! SDL Error:" << SDL_GetError() << std::endl;
         }
         g_renderer = SDL_CreateRenderer(g_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-        if (g_renderer == NULL){
+        if (g_renderer == NULL) {
             std::cout << "Renderer could not be created! SDL Error: " << SDL_GetError() << std::endl;
         }
-        SDL_SetRenderDrawColor( g_renderer, 0xFF, 0xFF, 0xFF, 0xFF );
-        g_viewport = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+
+        // Set renderer color and viewport
+        SDL_SetRenderDrawColor(g_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+        g_viewport = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
         SDL_RenderSetViewport(g_renderer, &g_viewport);
-        if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 ){
-                std::cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
-            }
+
+        // Initialize SDL_mixer and set up players' enemies
+        if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+            std::cout << "SDL_mixer could not initialize! SDL_mixer Error: " << Mix_GetError() << std::endl;
+        }
         player_1.set_enemy(&player_2);
         player_2.set_enemy(&player_1);
+
+        // Load textures, fonts, and sounds
         ships_spritesheet = load_texture("assets\\Sprites\\BattleShipSheet_final.png");
         tokens_spritesheet = load_texture("assets\\Sprites\\Tokens.png");
         radar_image = load_texture("assets\\Grids\\radargrid_final.png");
         ocean_image = load_texture("assets\\Grids\\oceangrid_final.png");
         metalic_panel = load_texture("assets\\Grids\\metalic_panel.png");
         g_font = load_font("assets\\fonts\\militar_font.ttf");
+        // Load prompt textures
         prompt_textures[PLAYER_1_SET_SHIP_POSITIONS] = load_text_texture("PLAYER ONE: Position your Ships!");
         prompt_textures[PLAYER_2_SET_SHIP_POSITIONS] = load_text_texture("PLAYER TWO: Position your Ships!");
         prompt_textures[PLAYER_1_TURN_TO_ATTACK] = load_text_texture("PLAYER ONE: Turn to Attack!");
         prompt_textures[PLAYER_2_TURN_TO_ATTACK] = load_text_texture("PLAYER TWO: Turn to Attack!");
         prompt_textures[PLAYER_1_WINS] = load_text_texture("PLAYER ONE: YOU'VE WON!");
         prompt_textures[PLAYER_2_WINS] = load_text_texture("PLAYER TWO: YOU'VE WON!");
+        // Load sounds and music
         water_splash = load_sound("assets\\Sfx\\water_splash.wav");
         explosion = load_sound("assets\\Sfx\\explosion_1.wav");
         good_beep = load_sound("assets\\Sfx\\good_beep.wav");
         denide_action = load_sound("assets\\Sfx\\bad_beep.wav");
         background_music = load_music("assets\\Sfx\\background_music.wav");
+
+        // Set textures for players and initialize their ships
         player_1.set_textures(ocean_image, radar_image, tokens_spritesheet);
         player_2.set_textures(ocean_image, radar_image, tokens_spritesheet);
-        g_banner = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT - GRID_TEXTURE_HEIGHT};
-        metalic_panel_position = {RADAR_X_POS, RADAR_Y_POS, GRID_TEXTURE_WIDTH, GRID_TEXTURE_HEIGHT};
+
+        // Set positions for the banner and metalic panel
+        g_banner = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT - GRID_TEXTURE_HEIGHT };
+        metalic_panel_position = { RADAR_X_POS, RADAR_Y_POS, GRID_TEXTURE_WIDTH, GRID_TEXTURE_HEIGHT };
     }
 }
 
-Game::~Game(void){
+// Destructor for the Game class
+Game::~Game(void) {
+    // Free resources and quit SDL components
     SDL_DestroyTexture(ships_spritesheet);
     SDL_DestroyTexture(tokens_spritesheet);
     SDL_DestroyTexture(radar_image);
     SDL_DestroyTexture(ocean_image);
-    for (size_t i = 0; i < TOTAL_TEXT_TEXTURES; i++){
+    for (size_t i = 0; i < TOTAL_TEXT_TEXTURES; i++) {
         SDL_DestroyTexture(prompt_textures[i]);
         prompt_textures[i] = NULL;
-    }    
+    }
     ships_spritesheet = NULL;
     tokens_spritesheet = NULL;
     radar_image = NULL;
@@ -73,7 +90,7 @@ Game::~Game(void){
     good_beep = NULL;
     denide_action = NULL;
     Mix_FreeMusic(background_music);
-    background_music = NULL; 
+    background_music = NULL;
     SDL_DestroyRenderer(g_renderer);
     SDL_DestroyWindow(g_window);
     g_window = NULL;
@@ -84,55 +101,62 @@ Game::~Game(void){
     SDL_Quit();
 }
 
-SDL_Texture *Game::load_text_texture(const char *text){
+// Load a text texture with a specific font
+SDL_Texture* Game::load_text_texture(const char* text) {
     SDL_Surface* text_surface = TTF_RenderText_Solid(g_font, text, BLACK_COLOR);
-    SDL_Texture *t_texture = nullptr;
-    if( text_surface == NULL ){
+    SDL_Texture* t_texture = nullptr;
+    if (text_surface == NULL) {
         std::cout << "Unable to render text surface! SDL_ttf Error: " << TTF_GetError() << std::endl;
     }
-    else{
-        t_texture = SDL_CreateTextureFromSurface( g_renderer, text_surface );
-        if( t_texture == NULL ){
+    else {
+        t_texture = SDL_CreateTextureFromSurface(g_renderer, text_surface);
+        if (t_texture == NULL) {
             std::cout << "Unable to create texture from rendered text! SDL Error:" << SDL_GetError() << std::endl;
         }
-        SDL_FreeSurface( text_surface );
+        SDL_FreeSurface(text_surface);
     }
     return t_texture;
 }
 
-SDL_Texture *Game::load_texture(const char *path_to_file){
+// Load an image texture
+SDL_Texture* Game::load_texture(const char* path_to_file) {
     SDL_Texture* new_texture = IMG_LoadTexture(g_renderer, path_to_file);
-    if(new_texture == NULL){
-        std::cout << "Could not load the image, Error: " << path_to_file << IMG_GetError()<<std::endl;
+    if (new_texture == NULL) {
+        std::cout << "Could not load the image, Error: " << path_to_file << IMG_GetError() << std::endl;
     }
     return new_texture;
 }
 
-TTF_Font *Game::load_font(const char *path_to_file){
-    TTF_Font *new_font = TTF_OpenFont(path_to_file, 28);
-    if( new_font == NULL ){
-        std::cout <<"Could not load the font! SDL_ttf Error: " << TTF_GetError()<<std::endl;
+// Load a font
+TTF_Font* Game::load_font(const char* path_to_file) {
+    TTF_Font* new_font = TTF_OpenFont(path_to_file, 28);
+    if (new_font == NULL) {
+        std::cout << "Could not load the font! SDL_ttf Error: " << TTF_GetError() << std::endl;
     }
     return new_font;
 }
 
-Mix_Chunk  *Game::load_sound(const char *path_to_file){
-    Mix_Chunk *new_sound = Mix_LoadWAV(path_to_file);
-    if( new_sound == NULL ){
+// Load a sound
+Mix_Chunk* Game::load_sound(const char* path_to_file) {
+    Mix_Chunk* new_sound = Mix_LoadWAV(path_to_file);
+    if (new_sound == NULL) {
         std::cout << "Couldn't load the sound! SDL_mixer Error: " << Mix_GetError() << std::endl;
     }
     return new_sound;
 }
 
-Mix_Music  *Game::load_music(const char *path_to_file){
-    Mix_Music *new_music = Mix_LoadMUS(path_to_file);
-    if( new_music == NULL ){
+// Load music
+Mix_Music* Game::load_music(const char* path_to_file) {
+    Mix_Music* new_music = Mix_LoadMUS(path_to_file);
+    if (new_music == NULL) {
         std::cout << "Couldn't load the sound! SDL_mixer Error:" << Mix_GetError() << std::endl;
     }
     return new_music;
 }
 
-void Game::game_loop(void){
+// Main game loop
+void Game::game_loop(void) {
+    // Play background music and initialize cursors
     Mix_PlayMusic(background_music, 0);
     Cursor p1_ship_cursor(&player_1, OCEAN_MODE, 1, 5);
     Cursor p2_ship_cursor(&player_2, OCEAN_MODE, 1, 5);
@@ -142,23 +166,29 @@ void Game::game_loop(void){
     p1_play_cursor.set_texture(tokens_spritesheet);
     p2_ship_cursor.set_texture(tokens_spritesheet);
     p2_play_cursor.set_texture(tokens_spritesheet);
+
+    // Initialize players' ships and set up the game
     player_1.init_ships(ships_spritesheet);
     player_2.init_ships(ships_spritesheet);
     game_finished = false;
-    while (player_is_selecting_ship_positions(&p1_ship_cursor) && !game_finished){
+
+    // Player 1 sets ship positions
+    while (player_is_selecting_ship_positions(&p1_ship_cursor) && !game_finished) {
         SDL_RenderClear(g_renderer);
         draw_banner(PLAYER_1_SET_SHIP_POSITIONS);
         player_1.draw_ocean(g_renderer);
         draw_metal_panel();
-        player_1.draw_ships(g_renderer, TOTAL_SHIPS); 
+        player_1.draw_ships(g_renderer, TOTAL_SHIPS);
         SDL_RenderPresent(g_renderer);
     }
-    while (player_is_selecting_ship_positions(&p2_ship_cursor) && !game_finished){
+
+    // Player 2 sets ship positions
+    while (player_is_selecting_ship_positions(&p2_ship_cursor) && !game_finished) {
         SDL_RenderClear(g_renderer);
         draw_banner(PLAYER_2_SET_SHIP_POSITIONS);
         player_2.draw_ocean(g_renderer);
         draw_metal_panel();
-        player_2.draw_ships(g_renderer, TOTAL_SHIPS); 
+        player_2.draw_ships(g_renderer, TOTAL_SHIPS);
         SDL_RenderPresent(g_renderer);
     }        
 
